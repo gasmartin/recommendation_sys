@@ -26,7 +26,7 @@ def pearson(r, r2):
         dem = sqrt(sum_x2 - pow(sum_x, 2) / n) * sqrt(sum_y2 - pow(sum_y, 2) / n)
         return (sum_xy - (sum_x * sum_y) / n) / dem
     except ZeroDivisionError:
-        return 0
+        return -1
 
 
 def euclidean_distance(r, r2):
@@ -44,30 +44,35 @@ def euclidean_distance(r, r2):
     return sqrt(acm)
 
 
-def get_distances(target_user, reviews):
-    distances = []
+def calculate_pearson_coefficients(target_user, reviews):
+    coefficients = []
 
     for user in reviews:
         if user != target_user:
-            distance = euclidean_distance(reviews[user], reviews[target_user])
-            distances.append((user, distance))
+            coefficient = pearson(reviews[user], reviews[target_user])
+            coefficients.append((user, coefficient))
 
-    return sorted(distances, key=lambda tuple_: tuple_[1])
+    return sorted(coefficients, key=lambda tuple_: tuple_[1], reverse=True)
 
 
 def recommend(user):
     reviews = get_reviews()
-    recommendation = None
+    recommendations = set()
+    end_search = False
 
-    for neighbor, distance in get_distances(user, reviews):
+    for neighbor, _ in calculate_pearson_coefficients(user, reviews):
         neighbor_games = list(reviews[neighbor].keys())
         unplayed_games = list(filter(lambda game: game not in reviews[user], neighbor_games))
 
-        if unplayed_games:
-            recommendation = unplayed_games[0]
+        for game in unplayed_games:
+            recommendations.add(game)
+            if len(recommendations) == 3:
+                break
+        
+        if len(recommendations) == 3:
             break
 
-    return recommendation
+    return recommendations
 
 
 def review(user, game, score):
